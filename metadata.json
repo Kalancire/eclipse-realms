@@ -1,0 +1,7 @@
+{
+  "name": "Eclipse Realms",
+  "description": "A 3D action RPG with overworld exploration, town shops, combat skills, and multi-floor dungeons. Runs fully offline as a native Android/desktop LibGDX application - no server-side API or API key required.",
+  "engine": "libGDX (Java)",
+  "platforms": ["android", "desktop"],
+  "majorCapabilities": []
+}

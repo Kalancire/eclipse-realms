@@ -1,0 +1,32 @@
+// Eclipse Realms - root build file
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.2.2'
+    }
+}
+
+allprojects {
+    apply plugin: 'eclipse'
+    version = '1.0'
+
+    repositories {
+        mavenCentral()
+        google()
+        maven { url 'https://s01.oss.sonatype.org' }
+    }
+}
+
+ext {
+    gdxVersion = '1.12.1'
+}
+
+configure(subprojects.findAll { it.name != 'android' }) {
+    apply plugin: 'java-library'
+    sourceCompatibility = 17
+    targetCompatibility = 17
+}
