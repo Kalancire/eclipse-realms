@@ -1,13 +1,18 @@
 name: Build Android APK
 
-# Builds a debug APK on every push and attaches it as a downloadable
-# workflow artifact - no local Android SDK setup needed.
+# Builds a debug APK on every push and publishes it as a GitHub Release,
+# plus attaches it as a workflow artifact. Uses the Android SDK that's
+# already installed on GitHub's ubuntu-latest runners - no separate
+# SDK-setup action needed.
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch: {}
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -22,15 +27,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # Explicit package list: the action's default list includes the removed
-      # "tools" package, which makes sdkmanager fail.
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: |
-            platform-tools
-            platforms;android-34
-            build-tools;34.0.0
+      - name: Install required SDK packages
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -40,8 +40,22 @@ jobs:
       - name: Build debug APK
         run: gradle :android:assembleDebug --stacktrace
 
+      - name: Rename APK
+        run: |
+          apk=$(find android/build/outputs/apk/debug -name "*.apk" | head -1)
+          cp "$apk" EclipseRealms.apk
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: eclipse-realms-debug-apk
-          path: android/build/outputs/apk/debug/*.apk
+          path: EclipseRealms.apk
+
+      - name: Publish GitHub Release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v1.0.${{ github.run_number }}" EclipseRealms.apk \
+            --title "Eclipse Realms v1.0.${{ github.run_number }}" \
+            --notes "Debug Android build. Download EclipseRealms.apk and install it on your phone."
